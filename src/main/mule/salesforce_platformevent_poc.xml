@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f6d4f789-1bc2-4b1e-b200-2a0ca413284b" basePath="/api" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="6e012264-2d7f-4af4-b742-562a53e3a137" >
+		<salesforce:oauth-user-pass-connection consumerKey="3MVG9bZIBBVRES4FTmL5FQzl0JgTO9ffbpUEHXpPiuCbtAWGlyB9cuOSwTDTdm3TfzxpXwakV2HZcSGNiYNjh" consumerSecret="AB6756A429E42F7AC5019170F9208E370D67A850743E947B039D6A9BAEFA40A7" username="gayathrimule@conflowence.com" password="Mulesoft123" securityToken="6Gk72JtNU2LrSW1tNVwuriHO" />
+	</salesforce:sfdc-config>
+	<flow name="newCase_Publish_Event" doc:id="35d5518e-e296-4356-b314-2c7cdae6f966" >
+		<http:listener doc:name="Listener" doc:id="d908e431-4c46-4d68-8138-842118cda32d" config-ref="HTTP_Listener_config" path="/event"/>
+		<ee:transform doc:name="Event payload" doc:id="c663d0c9-3179-46a6-94d3-ee41806d1172" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	Case__c : "Need to change the fields"
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:publish-platform-event-message doc:name="Publish platform event message" doc:id="73d98162-f7ca-42a7-b769-cce12ce395f1" config-ref="Salesforce_Config" platformEventName="New_case_created__e"/>
+		<ee:transform doc:name="payload-JSON" doc:id="9669aae5-7b52-4576-a977-0a77ff06e7a8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="sent-payload" doc:id="96f0468b-1b0b-4aa3-94ad-dcf01c44b334" message="#[payload]"/>
+	</flow>
+	<flow name="subscribe_event_flow" doc:id="5f3d5847-4417-4fe3-8bc7-9bc3f6f9c3c9" >
+		<salesforce:subscribe-channel-listener doc:name="Subscribe channel listener" doc:id="1714c9fe-c078-4f0a-bad1-9c9a6d770c82" config-ref="Salesforce_Config" streamingChannel="/event/New_case_created__e"/>
+		<logger level="INFO" doc:name="received-[payload]" doc:id="c10463ac-4cc9-421f-a7e8-469216b3cbf0" message="received #[payload]"/>
+	</flow>
+
+</mule>
+	
+	
